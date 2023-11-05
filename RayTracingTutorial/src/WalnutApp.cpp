@@ -19,6 +19,17 @@ public:
 		{
 			Render();
 		}
+		ImGui::Text("Sphere colors:");
+		ImGui::SliderFloat("Red", &m_ObjectColor.r, 0.0f, 1.0f);
+		ImGui::SliderFloat("Green", &m_ObjectColor.g, 0.0f, 1.0f);
+		ImGui::SliderFloat("Blue", &m_ObjectColor.b, 0.0f, 1.0f);
+
+
+		ImGui::Text("Light source coordinates:");
+		ImGui::SliderFloat("X", &m_LightSourceCoords.x, -5.0f, 5.0f);
+		ImGui::SliderFloat("Y", &m_LightSourceCoords.y, -5.0f, 5.0f);
+		ImGui::SliderFloat("Z", &m_LightSourceCoords.z, -5.0f, 5.0f);
+
 		ImGui::End();
 
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
@@ -45,7 +56,7 @@ public:
 		Timer timer;
 
 		m_Renderer.OnResize(m_ViewportWidth, m_ViewportHeight);
-		m_Renderer.Render();
+		m_Renderer.Render(m_ObjectColor, m_LightSourceCoords);
 
 		m_LastRenderTime = timer.ElapsedMillis();
 	}
@@ -53,6 +64,8 @@ private:
 	Renderer m_Renderer;
 	uint32_t m_ViewportWidth = 0, m_ViewportHeight = 0;
 	float m_LastRenderTime = 0.0f;
+	glm::vec3 m_ObjectColor = glm::vec3(1, 0, 1);
+	glm::vec3 m_LightSourceCoords = glm::vec3(-1, -1, -1);
 };
 
 Walnut::Application* Walnut::CreateApplication(int argc, char** argv)
