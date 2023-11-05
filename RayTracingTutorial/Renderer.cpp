@@ -54,7 +54,7 @@ void Renderer::Render()
 
 glm::vec4 Renderer::PerPixel(glm::vec2 coord)
 {
-	glm::vec3 rayOrigin(0.0f, 0.0f, 2.0f);
+	glm::vec3 rayOrigin(0.0f, 0.0f, 1.0f);
 	glm::vec3 rayDirection(coord.x, coord.y, -1.0f);
 	float radius = 0.5f;
 
@@ -77,9 +77,14 @@ glm::vec4 Renderer::PerPixel(glm::vec2 coord)
 	float closerHitDistance = (-b - glm::sqrt(discriminant)) / (2.0f * a);
 
 	glm::vec3 hitPoint = rayOrigin + rayDirection * closerHitDistance;
+	glm::vec3 normal = glm::normalize(hitPoint);
+
+	glm::vec3 lightDirection = glm::normalize(glm::vec3 (- 1, -1, -1));
+
+	float d = glm::max(glm::dot(normal, -lightDirection), 0.0f);
 
 	glm::vec3 sphereColor(1, 0, 1);
-	sphereColor = hitPoint;
+	sphereColor *= d; // normal * 0.5f + 0.5f;
 	return glm::vec4 (sphereColor, 1.0f);
 
 }
