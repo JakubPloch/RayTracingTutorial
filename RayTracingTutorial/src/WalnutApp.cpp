@@ -7,13 +7,32 @@
 #include "../Renderer.h"
 #include "../Camera.h"
 
+#include <glm/gtc/type_ptr.hpp>
+
 using namespace Walnut;
 
 class ExampleLayer : public Walnut::Layer
 {
 public:
 	ExampleLayer()
-		: m_Camera(45.0f, 0.1f, 100.f) {}
+		: m_Camera(45.0f, 0.1f, 100.f)
+	{
+		{
+			Sphere sphere;
+			sphere.Position = { 0.0f, 0.0f, 0.0f };
+			sphere.Albedo = { 1.0f, 0.0f, 1.0f };
+			sphere.Radius = 0.5f;
+			m_Scene.Spheres.push_back(sphere);
+		}
+
+		{
+			Sphere sphere;
+			sphere.Position = { 1.0f, 0.0f, -5.0f };
+			sphere.Albedo = { 0.2f, 0.3f, 1.0f };
+			sphere.Radius = 1.5f;
+			m_Scene.Spheres.push_back(sphere);
+		}
+	}
 	virtual void OnUpdate(float ts) override
 	{
 		m_Camera.OnUpdate(ts);
@@ -27,16 +46,27 @@ public:
 		{
 			Render();
 		}
-		ImGui::Text("Sphere colors:");
-		ImGui::SliderFloat("Red", &m_ObjectColor.r, 0.0f, 1.0f);
-		ImGui::SliderFloat("Green", &m_ObjectColor.g, 0.0f, 1.0f);
-		ImGui::SliderFloat("Blue", &m_ObjectColor.b, 0.0f, 1.0f);
 
+		ImGui::End();
+
+		ImGui::Begin("Scene");
 
 		ImGui::Text("Light source coordinates:");
-		ImGui::SliderFloat("X", &m_LightSourceCoords.x, -5.0f, 5.0f);
-		ImGui::SliderFloat("Y", &m_LightSourceCoords.y, -5.0f, 5.0f);
-		ImGui::SliderFloat("Z", &m_LightSourceCoords.z, -5.0f, 5.0f);
+		ImGui::DragFloat3("Light Position", glm::value_ptr(m_LightSourceCoords), 0.1f, -5.0f, 5.0f);
+
+		for (size_t i = 0; i < m_Scene.Spheres.size(); i++)
+		{
+			ImGui::PushID(i);
+
+			Sphere& sphere = m_Scene.Spheres[i];
+			ImGui::DragFloat3("Position", glm::value_ptr(sphere.Position), 0.1f);
+			ImGui::DragFloat("Radius", &sphere.Radius, 0.1f);
+			ImGui::ColorEdit3("Albedo", glm::value_ptr(sphere.Albedo));
+
+			ImGui::Separator();
+
+			ImGui::PopID();
+		}
 
 		ImGui::End();
 
@@ -59,22 +89,22 @@ public:
 		Render();
 	}
 
-	void Render() 
+	void Render()
 	{
 		Timer timer;
 
 		m_Renderer.OnResize(m_ViewportWidth, m_ViewportHeight);
 		m_Camera.OnResize(m_ViewportWidth, m_ViewportHeight);
-		m_Renderer.Render(m_Camera, m_ObjectColor, m_LightSourceCoords);
+		m_Renderer.Render(m_Scene, m_Camera, m_LightSourceCoords);
 
 		m_LastRenderTime = timer.ElapsedMillis();
 	}
 private:
 	Renderer m_Renderer;
 	Camera m_Camera;
+	Scene m_Scene;
 	uint32_t m_ViewportWidth = 0, m_ViewportHeight = 0;
 	float m_LastRenderTime = 0.0f;
-	glm::vec3 m_ObjectColor = glm::vec3(1, 0, 1);
 	glm::vec3 m_LightSourceCoords = glm::vec3(-1, -1, -1);
 };
 
