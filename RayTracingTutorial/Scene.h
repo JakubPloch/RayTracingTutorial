@@ -14,4 +14,5 @@ struct Sphere
 struct Scene
 {
 	std::vector<Sphere> Spheres;
+	glm::vec3 lightSourceCoords;
 };

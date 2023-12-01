@@ -35,18 +35,16 @@ void Renderer::OnResize(uint32_t width, uint32_t height)
 	m_ImageData = new uint32_t[width * height];
 }
 
-void Renderer::Render(const Scene& scene, const Camera& camera, glm::vec3 lightSourceCoords)
+void Renderer::Render(const Scene& scene, const Camera& camera)
 {
-	Ray ray;
-	ray.Origin = camera.GetPosition();
+	m_ActiveScene = &scene;
+	m_ActiveCamera = &camera;
 
 	for (uint32_t y = 0; y < m_FinalImage->GetHeight(); y++)
 	{
 		for (uint32_t x = 0; x < m_FinalImage->GetWidth(); x++)
 		{
-			ray.Direction = camera.GetRayDirections()[x + y * m_FinalImage->GetWidth()];
-
-			glm::vec4 color = TraceRay(scene, ray, lightSourceCoords);
+			glm::vec4 color = PerPixel(x, y, scene.lightSourceCoords);
 			color = glm::clamp(color, glm::vec4(0.0f), glm::vec4(1.0f));
 			m_ImageData[x + y * m_FinalImage->GetWidth()] = Helpers::ConvertToABGR(color);
 		}
@@ -55,20 +53,38 @@ void Renderer::Render(const Scene& scene, const Camera& camera, glm::vec3 lightS
 	m_FinalImage->SetData(m_ImageData);
 }
 
-glm::vec4 Renderer::TraceRay(const Scene& scene, const Ray& ray, glm::vec3 lightSourceCoords)
+glm::vec4 Renderer::PerPixel(uint32_t x, uint32_t y, glm::vec3 lightSourceCoords)
+{
+	Ray ray;
+	ray.Origin = m_ActiveCamera->GetPosition();
+	ray.Direction = m_ActiveCamera->GetRayDirections()[x + y * m_FinalImage->GetWidth()];
+	Renderer::HitPayload payload = TraceRay(ray);
+	if (payload.HitDistance < 0.0f)
+		return glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+
+	glm::vec3 lightDirection = glm::normalize(lightSourceCoords);
+	float lightIntensity = glm::max(glm::dot(payload.WorldNormal, -lightDirection), 0.0f);
+
+	const Sphere& sphere = m_ActiveScene->Spheres[payload.objectIndex];
+
+	glm::vec3 sphereColor = sphere.Albedo;
+	sphereColor *= lightIntensity; // normal * 0.5f + 0.5f;
+	return glm::vec4(sphereColor, 1.0f);
+}
+
+Renderer::HitPayload Renderer::TraceRay(const Ray& ray)
 {
 	// a = ray origin
 	// b = ray direction
 	// r = radius
 	// t = hit distance
 
-	if (scene.Spheres.size() == 0)
-		return glm::vec4(0, 0, 0, 1);
-
-	const Sphere* closestSphere = nullptr;
+	int closestSphere = -1;
 	float hitDistance = FLT_MAX;
-	for (const Sphere& sphere : scene.Spheres)
+
+	for (size_t i = 0; i < m_ActiveScene->Spheres.size(); i++)
 	{
+		const Sphere& sphere = m_ActiveScene->Spheres[i];
 		glm::vec3 tempRayOrigin = ray.Origin - sphere.Position;
 
 		float a = glm::dot(ray.Direction, ray.Direction);
@@ -82,27 +98,43 @@ glm::vec4 Renderer::TraceRay(const Scene& scene, const Ray& ray, glm::vec3 light
 
 		float closerHitDistance = (-b - glm::sqrt(discriminant)) / (2.0f * a);
 
-		if (closerHitDistance < hitDistance) 
+		if (closerHitDistance < hitDistance)
 		{
 			hitDistance = closerHitDistance;
-			closestSphere = &sphere;
+			closestSphere = (int)i;
 		}
 	}
 
-	if (closestSphere == nullptr)
-		return glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+	if (closestSphere < 0)
+		return Miss(ray);
 
-	glm::vec3 tempRayOrigin = ray.Origin - closestSphere->Position;
-	glm::vec3 hitPoint = tempRayOrigin + ray.Direction * hitDistance;
-	glm::vec3 normal = glm::normalize(hitPoint);
-	glm::vec3 lightDirection = glm::normalize(lightSourceCoords);
-
-	float lightIntensity = glm::max(glm::dot(normal, -lightDirection), 0.0f);
-
-	glm::vec3 sphereColor = closestSphere->Albedo;
-	sphereColor *= lightIntensity; // normal * 0.5f + 0.5f;
-	return glm::vec4(sphereColor, 1.0f);
+	return ClosestHit(ray, hitDistance, closestSphere);
 
 }
 
-// https://youtu.be/V5g9Mv9wLbY?si=JUxHE_sThS3oWUro&t=807
+
+Renderer::HitPayload Renderer::ClosestHit(const Ray& ray, float hitDistance, int objectIndex)
+{
+	Renderer::HitPayload payload;
+	payload.HitDistance = hitDistance;
+	payload.objectIndex = objectIndex;
+
+	const Sphere& closestSphere = m_ActiveScene->Spheres[objectIndex];
+
+	glm::vec3 tempRayOrigin = ray.Origin - closestSphere.Position;
+	payload.WorldPosition = tempRayOrigin + ray.Direction * hitDistance;
+	payload.WorldNormal = glm::normalize(payload.WorldPosition);
+
+	payload.WorldPosition += closestSphere.Position;
+
+	return payload;
+}
+
+Renderer::HitPayload Renderer::Miss(const Ray& ray)
+{
+	Renderer::HitPayload payload;
+	payload.HitDistance = -1.0f;
+	return payload;
+}
+
+// https://youtu.be/bMTyIEXcZjY?si=k9HSIDcm5fYKM1x2&t=1397

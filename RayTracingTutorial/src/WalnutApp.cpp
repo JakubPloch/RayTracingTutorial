@@ -17,6 +17,8 @@ public:
 	ExampleLayer()
 		: m_Camera(45.0f, 0.1f, 100.f)
 	{
+		m_Scene.lightSourceCoords = glm::vec3(-1, -1, -1);
+
 		{
 			Sphere sphere;
 			sphere.Position = { 0.0f, 0.0f, 0.0f };
@@ -52,7 +54,8 @@ public:
 		ImGui::Begin("Scene");
 
 		ImGui::Text("Light source coordinates:");
-		ImGui::DragFloat3("Light Position", glm::value_ptr(m_LightSourceCoords), 0.1f, -5.0f, 5.0f);
+		ImGui::DragFloat3("Light Position", glm::value_ptr(m_Scene.lightSourceCoords), 0.1f, -5.0f, 5.0f);
+		ImGui::Separator();
 
 		for (size_t i = 0; i < m_Scene.Spheres.size(); i++)
 		{
@@ -95,7 +98,7 @@ public:
 
 		m_Renderer.OnResize(m_ViewportWidth, m_ViewportHeight);
 		m_Camera.OnResize(m_ViewportWidth, m_ViewportHeight);
-		m_Renderer.Render(m_Scene, m_Camera, m_LightSourceCoords);
+		m_Renderer.Render(m_Scene, m_Camera);
 
 		m_LastRenderTime = timer.ElapsedMillis();
 	}
@@ -105,7 +108,6 @@ private:
 	Scene m_Scene;
 	uint32_t m_ViewportWidth = 0, m_ViewportHeight = 0;
 	float m_LastRenderTime = 0.0f;
-	glm::vec3 m_LightSourceCoords = glm::vec3(-1, -1, -1);
 };
 
 Walnut::Application* Walnut::CreateApplication(int argc, char** argv)
