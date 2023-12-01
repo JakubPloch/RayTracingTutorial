@@ -17,11 +17,11 @@ public:
 	ExampleLayer()
 		: m_Camera(45.0f, 0.1f, 100.f)
 	{
-		m_Scene.lightSourceCoords = glm::vec3(-1, -1, -1);
+		m_Scene.lightSourceCoords = glm::vec3(-1.0f, -0.8f, -2.2f);
 
 		{
 			Sphere sphere;
-			sphere.Position = { 0.0f, 0.0f, 0.0f };
+			sphere.Position = { 1.9f, 2.1f, -4.7f };
 			sphere.Albedo = { 1.0f, 0.0f, 1.0f };
 			sphere.Radius = 0.5f;
 			m_Scene.Spheres.push_back(sphere);

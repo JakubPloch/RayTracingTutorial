@@ -58,18 +58,37 @@ glm::vec4 Renderer::PerPixel(uint32_t x, uint32_t y, glm::vec3 lightSourceCoords
 	Ray ray;
 	ray.Origin = m_ActiveCamera->GetPosition();
 	ray.Direction = m_ActiveCamera->GetRayDirections()[x + y * m_FinalImage->GetWidth()];
-	Renderer::HitPayload payload = TraceRay(ray);
-	if (payload.HitDistance < 0.0f)
-		return glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 
-	glm::vec3 lightDirection = glm::normalize(lightSourceCoords);
-	float lightIntensity = glm::max(glm::dot(payload.WorldNormal, -lightDirection), 0.0f);
+	glm::vec3 pixelColor = glm::vec3(0.0f);
+	float bonceMultiplier = 1.0f;
 
-	const Sphere& sphere = m_ActiveScene->Spheres[payload.objectIndex];
+	int bounces = 2;
+	for (int i = 0; i < 2; i++)
+	{
+		Renderer::HitPayload payload = TraceRay(ray);
+		if (payload.HitDistance < 0.0f)
+		{
+			glm::vec3 backgroundColor = glm::vec3(0.0f);
+			pixelColor += backgroundColor * bonceMultiplier;
+			break;
+		}
 
-	glm::vec3 sphereColor = sphere.Albedo;
-	sphereColor *= lightIntensity; // normal * 0.5f + 0.5f;
-	return glm::vec4(sphereColor, 1.0f);
+		glm::vec3 lightDirection = glm::normalize(lightSourceCoords);
+		float lightIntensity = glm::max(glm::dot(payload.WorldNormal, -lightDirection), 0.0f);
+
+		const Sphere& sphere = m_ActiveScene->Spheres[payload.objectIndex];
+
+		glm::vec3 sphereColor = sphere.Albedo;
+		sphereColor *= lightIntensity; // normal * 0.5f + 0.5f;
+		pixelColor += sphereColor * bonceMultiplier;
+
+		bounces *= 0.7f;
+
+		ray.Origin = payload.WorldPosition + payload.WorldNormal * 0.0001f;
+		ray.Direction = glm::reflect(ray.Direction, payload.WorldNormal);
+	}
+
+	return glm::vec4(pixelColor, 1.0f);
 }
 
 Renderer::HitPayload Renderer::TraceRay(const Ray& ray)
@@ -98,7 +117,7 @@ Renderer::HitPayload Renderer::TraceRay(const Ray& ray)
 
 		float closerHitDistance = (-b - glm::sqrt(discriminant)) / (2.0f * a);
 
-		if (closerHitDistance < hitDistance)
+		if (closerHitDistance > 0 && closerHitDistance < hitDistance)
 		{
 			hitDistance = closerHitDistance;
 			closestSphere = (int)i;
