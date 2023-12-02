@@ -17,21 +17,22 @@ public:
 	ExampleLayer()
 		: m_Camera(45.0f, 0.1f, 100.f)
 	{
-		m_Scene.lightSourceCoords = glm::vec3(-1.0f, -0.8f, -2.2f);
+		m_Scene.LightSourceCoords = glm::vec3(-1.0f, -0.8f, -2.2f);
+		m_Scene.BackgroundColor = glm::vec3(0.6f, 0.7f, 0.9f);
 
 		{
 			Sphere sphere;
-			sphere.Position = { 1.9f, 2.1f, -4.7f };
-			sphere.Albedo = { 1.0f, 0.0f, 1.0f };
-			sphere.Radius = 0.5f;
+			sphere.Position = { 0.0f, 0.0f, 0.0f };
+			sphere.Mat.Albedo = { 1.0f, 0.0f, 1.0f };
+			sphere.Radius = 1.0f;
 			m_Scene.Spheres.push_back(sphere);
 		}
 
 		{
 			Sphere sphere;
-			sphere.Position = { 1.0f, 0.0f, -5.0f };
-			sphere.Albedo = { 0.2f, 0.3f, 1.0f };
-			sphere.Radius = 1.5f;
+			sphere.Position = { 0.0f, -101.0f, 0.0f };
+			sphere.Mat.Albedo = { 0.2f, 0.3f, 1.0f };
+			sphere.Radius = 100.0f;
 			m_Scene.Spheres.push_back(sphere);
 		}
 	}
@@ -54,7 +55,11 @@ public:
 		ImGui::Begin("Scene");
 
 		ImGui::Text("Light source coordinates:");
-		ImGui::DragFloat3("Light Position", glm::value_ptr(m_Scene.lightSourceCoords), 0.1f, -5.0f, 5.0f);
+		ImGui::DragFloat3("Light Position", glm::value_ptr(m_Scene.LightSourceCoords), 0.1f, -5.0f, 5.0f);
+		ImGui::Separator();
+
+		ImGui::Text("Background color:");
+		ImGui::ColorEdit3("Background color", glm::value_ptr(m_Scene.BackgroundColor));
 		ImGui::Separator();
 
 		for (size_t i = 0; i < m_Scene.Spheres.size(); i++)
@@ -64,7 +69,9 @@ public:
 			Sphere& sphere = m_Scene.Spheres[i];
 			ImGui::DragFloat3("Position", glm::value_ptr(sphere.Position), 0.1f);
 			ImGui::DragFloat("Radius", &sphere.Radius, 0.1f);
-			ImGui::ColorEdit3("Albedo", glm::value_ptr(sphere.Albedo));
+			ImGui::ColorEdit3("Albedo", glm::value_ptr(sphere.Mat.Albedo));
+			ImGui::DragFloat("Roughness", &sphere.Mat.Roughness);
+			ImGui::DragFloat("Metallic", &sphere.Mat.Metallic);
 
 			ImGui::Separator();
 

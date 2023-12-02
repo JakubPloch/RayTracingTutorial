@@ -44,7 +44,7 @@ void Renderer::Render(const Scene& scene, const Camera& camera)
 	{
 		for (uint32_t x = 0; x < m_FinalImage->GetWidth(); x++)
 		{
-			glm::vec4 color = PerPixel(x, y, scene.lightSourceCoords);
+			glm::vec4 color = PerPixel(x, y, scene.LightSourceCoords);
 			color = glm::clamp(color, glm::vec4(0.0f), glm::vec4(1.0f));
 			m_ImageData[x + y * m_FinalImage->GetWidth()] = Helpers::ConvertToABGR(color);
 		}
@@ -62,14 +62,13 @@ glm::vec4 Renderer::PerPixel(uint32_t x, uint32_t y, glm::vec3 lightSourceCoords
 	glm::vec3 pixelColor = glm::vec3(0.0f);
 	float bonceMultiplier = 1.0f;
 
-	int bounces = 2;
-	for (int i = 0; i < 2; i++)
+	int bounces = 5;
+	for (int i = 0; i < bounces; i++)
 	{
 		Renderer::HitPayload payload = TraceRay(ray);
 		if (payload.HitDistance < 0.0f)
 		{
-			glm::vec3 backgroundColor = glm::vec3(0.0f);
-			pixelColor += backgroundColor * bonceMultiplier;
+			pixelColor += m_ActiveScene->BackgroundColor * bonceMultiplier;
 			break;
 		}
 
@@ -78,14 +77,15 @@ glm::vec4 Renderer::PerPixel(uint32_t x, uint32_t y, glm::vec3 lightSourceCoords
 
 		const Sphere& sphere = m_ActiveScene->Spheres[payload.objectIndex];
 
-		glm::vec3 sphereColor = sphere.Albedo;
+		glm::vec3 sphereColor = sphere.Mat.Albedo;
 		sphereColor *= lightIntensity; // normal * 0.5f + 0.5f;
 		pixelColor += sphereColor * bonceMultiplier;
 
-		bounces *= 0.7f;
+		bonceMultiplier *= 0.5f;
 
 		ray.Origin = payload.WorldPosition + payload.WorldNormal * 0.0001f;
-		ray.Direction = glm::reflect(ray.Direction, payload.WorldNormal);
+		ray.Direction = glm::reflect(ray.Direction,
+			payload.WorldNormal + sphere.Mat.Roughness * Walnut::Random::Vec3(-0.5f, 0.5f));
 	}
 
 	return glm::vec4(pixelColor, 1.0f);
@@ -155,5 +155,3 @@ Renderer::HitPayload Renderer::Miss(const Ray& ray)
 	payload.HitDistance = -1.0f;
 	return payload;
 }
-
-// https://youtu.be/bMTyIEXcZjY?si=k9HSIDcm5fYKM1x2&t=1397
