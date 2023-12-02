@@ -76,8 +76,9 @@ glm::vec4 Renderer::PerPixel(uint32_t x, uint32_t y, glm::vec3 lightSourceCoords
 		float lightIntensity = glm::max(glm::dot(payload.WorldNormal, -lightDirection), 0.0f);
 
 		const Sphere& sphere = m_ActiveScene->Spheres[payload.objectIndex];
+		const Material& material = m_ActiveScene->Materials[sphere.MaterialIndex];
 
-		glm::vec3 sphereColor = sphere.Mat.Albedo;
+		glm::vec3 sphereColor = material.Albedo;
 		sphereColor *= lightIntensity; // normal * 0.5f + 0.5f;
 		pixelColor += sphereColor * bonceMultiplier;
 
@@ -85,7 +86,7 @@ glm::vec4 Renderer::PerPixel(uint32_t x, uint32_t y, glm::vec3 lightSourceCoords
 
 		ray.Origin = payload.WorldPosition + payload.WorldNormal * 0.0001f;
 		ray.Direction = glm::reflect(ray.Direction,
-			payload.WorldNormal + sphere.Mat.Roughness * Walnut::Random::Vec3(-0.5f, 0.5f));
+			payload.WorldNormal + material.Roughness * Walnut::Random::Vec3(-0.5f, 0.5f));
 	}
 
 	return glm::vec4(pixelColor, 1.0f);

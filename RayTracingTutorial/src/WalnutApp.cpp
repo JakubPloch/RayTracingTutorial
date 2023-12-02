@@ -20,19 +20,27 @@ public:
 		m_Scene.LightSourceCoords = glm::vec3(-1.0f, -0.8f, -2.2f);
 		m_Scene.BackgroundColor = glm::vec3(0.6f, 0.7f, 0.9f);
 
+		Material& pinkSphere = m_Scene.Materials.emplace_back();
+		pinkSphere.Albedo = { 1.0f, 0.0f, 1.0f };
+		pinkSphere.Roughness = 0.0f;
+
+		Material& blueSphere = m_Scene.Materials.emplace_back();
+		blueSphere.Albedo = { 0.2f, 0.3f, 1.0f };
+		blueSphere.Roughness = 0.1f;
+
 		{
 			Sphere sphere;
 			sphere.Position = { 0.0f, 0.0f, 0.0f };
-			sphere.Mat.Albedo = { 1.0f, 0.0f, 1.0f };
 			sphere.Radius = 1.0f;
+			sphere.MaterialIndex = 0;
 			m_Scene.Spheres.push_back(sphere);
 		}
 
 		{
 			Sphere sphere;
 			sphere.Position = { 0.0f, -101.0f, 0.0f };
-			sphere.Mat.Albedo = { 0.2f, 0.3f, 1.0f };
 			sphere.Radius = 100.0f;
+			sphere.MaterialIndex = 1;
 			m_Scene.Spheres.push_back(sphere);
 		}
 	}
@@ -68,13 +76,23 @@ public:
 
 			Sphere& sphere = m_Scene.Spheres[i];
 			ImGui::DragFloat3("Position", glm::value_ptr(sphere.Position), 0.1f);
+			ImGui::DragInt("Material", &sphere.MaterialIndex, 1.0f, 0, (int)m_Scene.Materials.size() - 1);
 			ImGui::DragFloat("Radius", &sphere.Radius, 0.1f);
-			ImGui::ColorEdit3("Albedo", glm::value_ptr(sphere.Mat.Albedo));
-			ImGui::DragFloat("Roughness", &sphere.Mat.Roughness);
-			ImGui::DragFloat("Metallic", &sphere.Mat.Metallic);
 
 			ImGui::Separator();
+			ImGui::PopID();
+		}
 
+		for (size_t i = 0; i < m_Scene.Materials.size(); i++)
+		{
+			ImGui::PushID(i);
+
+			Material& material = m_Scene.Materials[i];
+			ImGui::ColorEdit3("Albedo", glm::value_ptr(material.Albedo));
+			ImGui::DragFloat("Roughness", &material.Roughness, 0.05f, 0.0f, 1.0f);
+			ImGui::DragFloat("Metallic", &material.Metallic, 0.05f, 0.0f, 1.0f);
+
+			ImGui::Separator();
 			ImGui::PopID();
 		}
 

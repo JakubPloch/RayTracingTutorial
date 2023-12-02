@@ -14,7 +14,8 @@ struct Sphere
 {
 	glm::vec3 Position{ 0.0f };
 	float Radius = 0.5f;
-	Material Mat;
+
+	int MaterialIndex = 0;
 };
 
 struct Scene
@@ -22,4 +23,5 @@ struct Scene
 	std::vector<Sphere> Spheres;
 	glm::vec3 LightSourceCoords;
 	glm::vec3 BackgroundColor;
+	std::vector<Material> Materials;
 };
