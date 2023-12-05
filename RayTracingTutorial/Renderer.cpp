@@ -1,6 +1,7 @@
 #include "Walnut/Random.h"
 #include "Renderer.h"
 #include "Scene.h"
+#include <execution>
 
 namespace Helpers
 {
@@ -36,7 +37,17 @@ void Renderer::OnResize(uint32_t width, uint32_t height)
 
 	delete[] m_AccumulationData;
 	m_AccumulationData = new glm::vec4[width * height];
+
+	m_ImageHorizontalIter.resize(width);
+	m_ImageVerticalIter.resize(height);
+
+	for (uint32_t i = 0; i < width; i++)
+		m_ImageHorizontalIter[i] = i;
+
+	for (uint32_t i = 0; i < height; i++)
+		m_ImageVerticalIter[i] = i;
 }
+
 
 void Renderer::Render(const Scene& scene, const Camera& camera)
 {
@@ -46,20 +57,21 @@ void Renderer::Render(const Scene& scene, const Camera& camera)
 	if (m_FrameIndex == 1)
 		memset(m_AccumulationData, 0, m_FinalImage->GetWidth() * m_FinalImage->GetHeight() * sizeof(glm::vec4));
 
-	for (uint32_t y = 0; y < m_FinalImage->GetHeight(); y++)
-	{
-		for (uint32_t x = 0; x < m_FinalImage->GetWidth(); x++)
+	std::for_each(std::execution::par, m_ImageVerticalIter.begin(), m_ImageVerticalIter.end(),
+		[this, scene](uint32_t y)
 		{
-			glm::vec4 color = PerPixel(x, y, scene.LightSourceCoords);
-			m_AccumulationData[x + y * m_FinalImage->GetWidth()] += color;
+			for (uint32_t x = 0; x < m_FinalImage->GetWidth(); x++)
+			{
+				glm::vec4 color = PerPixel(x, y, scene.LightSourceCoords);
+				m_AccumulationData[x + y * m_FinalImage->GetWidth()] += color;
 
-			glm::vec4 accumulatedColor = m_AccumulationData[x + y * m_FinalImage->GetWidth()];
-			accumulatedColor /= (float)m_FrameIndex;
+				glm::vec4 accumulatedColor = m_AccumulationData[x + y * m_FinalImage->GetWidth()];
+				accumulatedColor /= (float)m_FrameIndex;
 
-			accumulatedColor = glm::clamp(accumulatedColor, glm::vec4(0.0f), glm::vec4(1.0f));
-			m_ImageData[x + y * m_FinalImage->GetWidth()] = Helpers::ConvertToABGR(accumulatedColor);
-		}
-	}
+				accumulatedColor = glm::clamp(accumulatedColor, glm::vec4(0.0f), glm::vec4(1.0f));
+				m_ImageData[x + y * m_FinalImage->GetWidth()] = Helpers::ConvertToABGR(accumulatedColor);
+			}
+		});
 
 	m_FinalImage->SetData(m_ImageData);
 
