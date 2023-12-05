@@ -60,17 +60,18 @@ void Renderer::Render(const Scene& scene, const Camera& camera)
 	std::for_each(std::execution::par, m_ImageVerticalIter.begin(), m_ImageVerticalIter.end(),
 		[this, scene](uint32_t y)
 		{
-			for (uint32_t x = 0; x < m_FinalImage->GetWidth(); x++)
-			{
-				glm::vec4 color = PerPixel(x, y, scene.LightSourceCoords);
-				m_AccumulationData[x + y * m_FinalImage->GetWidth()] += color;
+			std::for_each(std::execution::par, m_ImageHorizontalIter.begin(), m_ImageHorizontalIter.end(),
+			[this, y, scene](uint32_t x)
+				{
+					glm::vec4 color = PerPixel(x, y, scene.LightSourceCoords);
+					m_AccumulationData[x + y * m_FinalImage->GetWidth()] += color;
 
-				glm::vec4 accumulatedColor = m_AccumulationData[x + y * m_FinalImage->GetWidth()];
-				accumulatedColor /= (float)m_FrameIndex;
+					glm::vec4 accumulatedColor = m_AccumulationData[x + y * m_FinalImage->GetWidth()];
+					accumulatedColor /= (float)m_FrameIndex;
 
-				accumulatedColor = glm::clamp(accumulatedColor, glm::vec4(0.0f), glm::vec4(1.0f));
-				m_ImageData[x + y * m_FinalImage->GetWidth()] = Helpers::ConvertToABGR(accumulatedColor);
-			}
+					accumulatedColor = glm::clamp(accumulatedColor, glm::vec4(0.0f), glm::vec4(1.0f));
+					m_ImageData[x + y * m_FinalImage->GetWidth()] = Helpers::ConvertToABGR(accumulatedColor);
+				});
 		});
 
 	m_FinalImage->SetData(m_ImageData);
