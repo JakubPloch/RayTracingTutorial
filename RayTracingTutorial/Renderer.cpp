@@ -63,7 +63,7 @@ void Renderer::Render(const Scene& scene, const Camera& camera)
 			std::for_each(std::execution::par, m_ImageHorizontalIter.begin(), m_ImageHorizontalIter.end(),
 			[this, y, scene](uint32_t x)
 				{
-					glm::vec4 color = PerPixel(x, y, scene.LightSourceCoords);
+					glm::vec4 color = PerPixel(x, y, scene.GlobalDirectionalLight);
 					m_AccumulationData[x + y * m_FinalImage->GetWidth()] += color;
 
 					glm::vec4 accumulatedColor = m_AccumulationData[x + y * m_FinalImage->GetWidth()];
@@ -82,14 +82,14 @@ void Renderer::Render(const Scene& scene, const Camera& camera)
 		m_FrameIndex = 1;
 }
 
-glm::vec4 Renderer::PerPixel(uint32_t x, uint32_t y, glm::vec3 lightSourceCoords)
+glm::vec4 Renderer::PerPixel(uint32_t x, uint32_t y, DirectionalLight directionalLight)
 {
 	Ray ray;
 	ray.Origin = m_ActiveCamera->GetPosition();
 	ray.Direction = m_ActiveCamera->GetRayDirections()[x + y * m_FinalImage->GetWidth()];
 
-	glm::vec3 pixelColor = glm::vec3(0.0f);
-	float bonceMultiplier = 1.0f;
+	glm::vec3 light = glm::vec3(0.0f);
+	glm::vec3 lightContribution(1.0f);
 
 	int bounces = 5;
 	for (int i = 0; i < bounces; i++)
@@ -97,29 +97,31 @@ glm::vec4 Renderer::PerPixel(uint32_t x, uint32_t y, glm::vec3 lightSourceCoords
 		Renderer::HitPayload payload = TraceRay(ray);
 		if (payload.HitDistance < 0.0f)
 		{
-			pixelColor += m_ActiveScene->BackgroundColor * bonceMultiplier;
 			break;
 		}
 
-		// TODO: check if light is obstructed by shooting a ray from hitpoit to light source (hit means we're in shadow)
-		glm::vec3 lightDirection = glm::normalize(lightSourceCoords);
-		float lightIntensity = glm::max(glm::dot(payload.WorldNormal, -lightDirection), 0.0f);
-
 		const Sphere& sphere = m_ActiveScene->Spheres[payload.objectIndex];
 		const Material& material = m_ActiveScene->Materials[sphere.MaterialIndex];
-
 		glm::vec3 sphereColor = material.Albedo;
-		sphereColor *= lightIntensity; // normal * 0.5f + 0.5f;
-		pixelColor += sphereColor * bonceMultiplier;
 
-		bonceMultiplier *= 0.5f;
+		// Not physically accurate - evenly lights each object
+		// TODO: move to a function like "SceneEditorPerPixel"
+		if (directionalLight.IsEnabled)
+		{
+			light += m_ActiveScene->BackgroundColor * lightContribution;
+			glm::vec3 lightDirection = glm::normalize(directionalLight.LightSourceCoords);
+			float lightIntensity = glm::max(glm::dot(payload.WorldNormal, -lightDirection), 0.0f);
+			sphereColor *= lightIntensity; // normal * 0.5f + 0.5f;
+		}
+
+		lightContribution *= material.Albedo;
+		light += material.GetEmission();
 
 		ray.Origin = payload.WorldPosition + payload.WorldNormal * 0.0001f;
-		ray.Direction = glm::reflect(ray.Direction,
-			payload.WorldNormal + material.Roughness * Walnut::Random::Vec3(-0.5f, 0.5f));
+		ray.Direction = glm::normalize(payload.WorldNormal + material.Roughness * Walnut::Random::InUnitSphere());
 	}
 
-	return glm::vec4(pixelColor, 1.0f);
+	return glm::vec4(light, 1.0f);
 }
 
 Renderer::HitPayload Renderer::TraceRay(const Ray& ray)

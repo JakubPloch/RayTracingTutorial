@@ -33,7 +33,7 @@ private:
 		int objectIndex;
 	};
 
-	glm::vec4 PerPixel(uint32_t x, uint32_t y, glm::vec3 lightSourceCoords); //RayGen
+	glm::vec4 PerPixel(uint32_t x, uint32_t y, DirectionalLight directionalLight); //RayGen
 
 	HitPayload TraceRay(const Ray& ray);
 	HitPayload ClosestHit(const Ray& ray, float hitDistance, int objectIndex);

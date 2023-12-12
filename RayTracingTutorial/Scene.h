@@ -22,10 +22,16 @@ struct Sphere
 	int MaterialIndex = 0;
 };
 
+struct DirectionalLight
+{
+	bool IsEnabled = false;
+	glm::vec3 LightSourceCoords{ 0.0f };
+};
+
 struct Scene
 {
 	std::vector<Sphere> Spheres;
-	glm::vec3 LightSourceCoords;
 	glm::vec3 BackgroundColor;
 	std::vector<Material> Materials;
+	DirectionalLight GlobalDirectionalLight;
 };

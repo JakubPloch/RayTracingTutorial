@@ -17,7 +17,10 @@ public:
 	ExampleLayer()
 		: m_Camera(45.0f, 0.1f, 100.f)
 	{
-		m_Scene.LightSourceCoords = glm::vec3(-1.0f, -0.8f, -2.2f);
+		DirectionalLight& directionalLight = m_Scene.GlobalDirectionalLight;
+		directionalLight.LightSourceCoords = glm::vec3(-1.0f, -0.8f, -2.2f);
+		directionalLight.IsEnabled = false;
+
 		m_Scene.BackgroundColor = glm::vec3(0.6f, 0.7f, 0.9f);
 
 		Material& pinkSphere = m_Scene.Materials.emplace_back();
@@ -84,8 +87,10 @@ public:
 
 		ImGui::Begin("Scene");
 
-		ImGui::Text("Light source coordinates:");
-		ImGui::DragFloat3("Light Position", glm::value_ptr(m_Scene.LightSourceCoords), 0.1f, -5.0f, 5.0f);
+		ImGui::Text("Global light source:");
+		DirectionalLight& directionalLight = m_Scene.GlobalDirectionalLight;
+		ImGui::Checkbox("Is light enabled", &directionalLight.IsEnabled);
+		ImGui::DragFloat3("Light Position", glm::value_ptr(directionalLight.LightSourceCoords), 0.1f, -5.0f, 5.0f);
 		ImGui::Separator();
 
 		ImGui::Text("Background color:");
