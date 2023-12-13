@@ -57,14 +57,25 @@ void Renderer::Render(const Scene& scene, const Camera& camera)
 	if (m_FrameIndex == 1)
 		memset(m_AccumulationData, 0, m_FinalImage->GetWidth() * m_FinalImage->GetHeight() * sizeof(glm::vec4));
 
+	// TODO: implement function pointer so PerPixel is not called for each Pixel
+	// glm::vec4 colorFunction = 
+
 	std::for_each(std::execution::par, m_ImageVerticalIter.begin(), m_ImageVerticalIter.end(),
 		[this, scene](uint32_t y)
 		{
 			std::for_each(std::execution::par, m_ImageHorizontalIter.begin(), m_ImageHorizontalIter.end(),
 			[this, y, scene](uint32_t x)
 				{
-					glm::vec4 color = PerPixel(x, y, scene.GlobalDirectionalLight);
-					m_AccumulationData[x + y * m_FinalImage->GetWidth()] += color;
+					glm::vec4 color;
+					if (scene.GlobalDirectionalLight.IsEnabled)
+					{
+						color = PerPixelEvenlyLit(x, y, scene.GlobalDirectionalLight);
+					}
+					else
+					{
+						color = PerPixel(x, y);
+					}
+					m_AccumulationData[x + y * m_FinalImage->GetWidth()] += color;						
 
 					glm::vec4 accumulatedColor = m_AccumulationData[x + y * m_FinalImage->GetWidth()];
 					accumulatedColor /= (float)m_FrameIndex;
@@ -82,7 +93,7 @@ void Renderer::Render(const Scene& scene, const Camera& camera)
 		m_FrameIndex = 1;
 }
 
-glm::vec4 Renderer::PerPixel(uint32_t x, uint32_t y, DirectionalLight directionalLight)
+glm::vec4 Renderer::PerPixelEvenlyLit(uint32_t x, uint32_t y, DirectionalLight directionalLight)
 {
 	Ray ray;
 	ray.Origin = m_ActiveCamera->GetPosition();
@@ -113,6 +124,38 @@ glm::vec4 Renderer::PerPixel(uint32_t x, uint32_t y, DirectionalLight directiona
 			float lightIntensity = glm::max(glm::dot(payload.WorldNormal, -lightDirection), 0.0f);
 			sphereColor *= lightIntensity; // normal * 0.5f + 0.5f;
 		}
+
+		lightContribution *= material.Albedo;
+		light += material.GetEmission();
+
+		ray.Origin = payload.WorldPosition + payload.WorldNormal * 0.0001f;
+		ray.Direction = glm::normalize(payload.WorldNormal + material.Roughness * Walnut::Random::InUnitSphere());
+	}
+
+	return glm::vec4(light, 1.0f);
+}
+
+glm::vec4 Renderer::PerPixel(uint32_t x, uint32_t y)
+{
+	Ray ray;
+	ray.Origin = m_ActiveCamera->GetPosition();
+	ray.Direction = m_ActiveCamera->GetRayDirections()[x + y * m_FinalImage->GetWidth()];
+
+	glm::vec3 light = glm::vec3(0.0f);
+	glm::vec3 lightContribution(1.0f);
+
+	int bounces = 5;
+	for (int i = 0; i < bounces; i++)
+	{
+		Renderer::HitPayload payload = TraceRay(ray);
+		if (payload.HitDistance < 0.0f)
+		{
+			break;
+		}
+
+		const Sphere& sphere = m_ActiveScene->Spheres[payload.objectIndex];
+		const Material& material = m_ActiveScene->Materials[sphere.MaterialIndex];
+		glm::vec3 sphereColor = material.Albedo;
 
 		lightContribution *= material.Albedo;
 		light += material.GetEmission();

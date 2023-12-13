@@ -83,15 +83,16 @@ public:
 			m_Renderer.ResetFrameIndex();
 		}
 
-		ImGui::End();
-
-		ImGui::Begin("Scene");
+		ImGui::Separator();
 
 		ImGui::Text("Global light source:");
 		DirectionalLight& directionalLight = m_Scene.GlobalDirectionalLight;
 		ImGui::Checkbox("Is light enabled", &directionalLight.IsEnabled);
-		ImGui::DragFloat3("Light Position", glm::value_ptr(directionalLight.LightSourceCoords), 0.1f, -5.0f, 5.0f);
-		ImGui::Separator();
+		ImGui::DragFloat3("Global Light Position", glm::value_ptr(directionalLight.LightSourceCoords), 0.1f, -5.0f, 5.0f);
+
+		ImGui::End();
+
+		ImGui::Begin("Scene");
 
 		ImGui::Text("Background color:");
 		ImGui::ColorEdit3("Background color", glm::value_ptr(m_Scene.BackgroundColor));
