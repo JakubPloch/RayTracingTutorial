@@ -57,8 +57,6 @@ void Renderer::Render(const Scene& scene, const Camera& camera)
 	if (m_FrameIndex == 1)
 		memset(m_AccumulationData, 0, m_FinalImage->GetWidth() * m_FinalImage->GetHeight() * sizeof(glm::vec4));
 
-	// TODO: implement function pointer so PerPixel is not called for each Pixel
-	// glm::vec4 colorFunction = 
 
 	std::for_each(std::execution::par, m_ImageVerticalIter.begin(), m_ImageVerticalIter.end(),
 		[this, scene](uint32_t y)
@@ -66,6 +64,8 @@ void Renderer::Render(const Scene& scene, const Camera& camera)
 			std::for_each(std::execution::par, m_ImageHorizontalIter.begin(), m_ImageHorizontalIter.end(),
 			[this, y, scene](uint32_t x)
 				{
+					// TODO: implement a more generic PerPixel "shader" approach
+
 					glm::vec4 color;
 					if (scene.GlobalDirectionalLight.IsEnabled)
 					{
@@ -75,7 +75,8 @@ void Renderer::Render(const Scene& scene, const Camera& camera)
 					{
 						color = PerPixel(x, y);
 					}
-					m_AccumulationData[x + y * m_FinalImage->GetWidth()] += color;						
+
+					m_AccumulationData[x + y * m_FinalImage->GetWidth()] += color;
 
 					glm::vec4 accumulatedColor = m_AccumulationData[x + y * m_FinalImage->GetWidth()];
 					accumulatedColor /= (float)m_FrameIndex;
@@ -116,14 +117,10 @@ glm::vec4 Renderer::PerPixelEvenlyLit(uint32_t x, uint32_t y, DirectionalLight d
 		glm::vec3 sphereColor = material.Albedo;
 
 		// Not physically accurate - evenly lights each object
-		// TODO: move to a function like "SceneEditorPerPixel"
-		if (directionalLight.IsEnabled)
-		{
-			light += m_ActiveScene->BackgroundColor * lightContribution;
-			glm::vec3 lightDirection = glm::normalize(directionalLight.LightSourceCoords);
-			float lightIntensity = glm::max(glm::dot(payload.WorldNormal, -lightDirection), 0.0f);
-			sphereColor *= lightIntensity; // normal * 0.5f + 0.5f;
-		}
+		light += m_ActiveScene->BackgroundColor * lightContribution;
+		glm::vec3 lightDirection = glm::normalize(directionalLight.LightSourceCoords);
+		float lightIntensity = glm::max(glm::dot(payload.WorldNormal, -lightDirection), 0.0f);
+		sphereColor *= lightIntensity; // normal * 0.5f + 0.5f;
 
 		lightContribution *= material.Albedo;
 		light += material.GetEmission();
