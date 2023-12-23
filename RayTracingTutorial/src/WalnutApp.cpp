@@ -71,6 +71,7 @@ public:
 	{
 		ImGui::Begin("Settings");
 		ImGui::Text("Last render: %.3fms", m_LastRenderTime);
+		ImGui::Text("Average render: %.3fms", m_AverageRenderTime);
 		if (ImGui::Button("Render"))
 		{
 			Render();
@@ -81,6 +82,9 @@ public:
 		if (ImGui::Button("Reset"))
 		{
 			m_Renderer.ResetFrameIndex();
+			m_RenderIterations = 0;
+			m_TotalRenderTime = 0;
+			m_AverageRenderTime = 0.0f;
 		}
 
 		ImGui::Separator();
@@ -156,6 +160,10 @@ public:
 		m_Renderer.Render(m_Scene, m_Camera);
 
 		m_LastRenderTime = timer.ElapsedMillis();
+		m_TotalRenderTime += m_LastRenderTime;
+		m_RenderIterations++;
+		m_AverageRenderTime = m_TotalRenderTime / m_RenderIterations;
+
 	}
 private:
 	Renderer m_Renderer;
@@ -163,6 +171,10 @@ private:
 	Scene m_Scene;
 	uint32_t m_ViewportWidth = 0, m_ViewportHeight = 0;
 	float m_LastRenderTime = 0.0f;
+	uint32_t m_RenderIterations = 0;
+	float m_TotalRenderTime = 0;
+	float m_AverageRenderTime = 0.0f;
+
 };
 
 Walnut::Application* Walnut::CreateApplication(int argc, char** argv)
