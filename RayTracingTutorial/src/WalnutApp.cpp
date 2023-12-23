@@ -6,6 +6,7 @@
 #include "Walnut/Timer.h"
 #include "../Renderer.h"
 #include "../Camera.h"
+#include "../Benchmark.h"
 
 #include <glm/gtc/type_ptr.hpp>
 
@@ -71,7 +72,7 @@ public:
 	{
 		ImGui::Begin("Settings");
 		ImGui::Text("Last render: %.3fms", m_LastRenderTime);
-		ImGui::Text("Average render: %.3fms", m_AverageRenderTime);
+		ImGui::Text("Average render: %.3fms", m_benchmark.GetAverageRenderTime());
 		if (ImGui::Button("Render"))
 		{
 			Render();
@@ -82,9 +83,7 @@ public:
 		if (ImGui::Button("Reset"))
 		{
 			m_Renderer.ResetFrameIndex();
-			m_RenderIterations = 0;
-			m_TotalRenderTime = 0;
-			m_AverageRenderTime = 0.0f;
+			m_benchmark.ResetAverage();
 		}
 
 		ImGui::Separator();
@@ -160,20 +159,17 @@ public:
 		m_Renderer.Render(m_Scene, m_Camera);
 
 		m_LastRenderTime = timer.ElapsedMillis();
-		m_TotalRenderTime += m_LastRenderTime;
-		m_RenderIterations++;
-		m_AverageRenderTime = m_TotalRenderTime / m_RenderIterations;
+
+		m_benchmark.CalculateAverageRenderTime(m_LastRenderTime);
 
 	}
 private:
 	Renderer m_Renderer;
+	Benchmark m_benchmark;
 	Camera m_Camera;
 	Scene m_Scene;
 	uint32_t m_ViewportWidth = 0, m_ViewportHeight = 0;
 	float m_LastRenderTime = 0.0f;
-	uint32_t m_RenderIterations = 0;
-	float m_TotalRenderTime = 0;
-	float m_AverageRenderTime = 0.0f;
 
 };
 
