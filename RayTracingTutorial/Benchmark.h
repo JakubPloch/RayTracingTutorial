@@ -4,8 +4,6 @@
 
 class Benchmark
 {
-
-
 public:
 	void ResetAverage();
 	void CalculateAverageRenderTime(float lastRenderTime);
