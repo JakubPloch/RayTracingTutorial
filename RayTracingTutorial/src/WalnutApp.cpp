@@ -65,7 +65,10 @@ public:
 	virtual void OnUpdate(float ts) override
 	{
 		if (m_Camera.OnUpdate(ts))
+		{
 			m_Renderer.ResetFrameIndex();
+			m_benchmark.ResetAverage();
+		}
 	}
 
 	virtual void OnUIRender() override
