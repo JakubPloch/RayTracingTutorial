@@ -2,6 +2,7 @@
 
 #include <glm/glm.hpp>
 #include <vector>
+#include "Model.h"
 
 struct Material
 {
@@ -34,4 +35,6 @@ struct Scene
 	glm::vec3 BackgroundColor;
 	std::vector<Material> Materials;
 	DirectionalLight GlobalDirectionalLight;
+	std::vector<Triangle> Triangles;
+	std::vector<Model*> Models;
 };

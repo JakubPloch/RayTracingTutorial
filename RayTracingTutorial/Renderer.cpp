@@ -238,6 +238,45 @@ Renderer::HitPayload Renderer::TraceRay(const Ray& ray)
 
 }
 
+glm::vec4 Renderer::TraceRayModel(const Scene& scene, const Ray& ray) {
+
+	if (scene.Models.size() == 0)
+		return glm::vec4(0, 0, 0, 1);
+
+	const Triangle* closestTriangle = nullptr;
+	float hitDistance = std::numeric_limits<float>::max();
+
+
+	for (const Model* model : scene.Models) {
+		for (const Triangle* triangle : model->m_triangles)
+		{
+			glm::vec3 origin = ray.Origin - model->Position;
+			float t = (glm::dot(triangle->Normal, triangle->A - origin)) / glm::dot(triangle->Normal, ray.Direction);
+			glm::vec3 Q = origin + t * ray.Direction;
+
+			if (
+				t > 0.0f &&
+				t < hitDistance &&
+				glm::dot(glm::cross(triangle->B - triangle->A, Q - triangle->A), triangle->Normal) >= 0 &&
+				glm::dot(glm::cross(triangle->C - triangle->B, Q - triangle->B), triangle->Normal) >= 0 &&
+				glm::dot(glm::cross(triangle->A - triangle->C, Q - triangle->C), triangle->Normal) >= 0
+				)
+			{
+				hitDistance = t;
+				closestTriangle = triangle;
+			}
+		}
+	}
+
+	if (closestTriangle == nullptr)
+		return glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+
+	//std::cout << closestTriangle->Normal.x << closestTriangle->Normal.y << closestTriangle->Normal.z << std::endl;
+	glm::vec3 lightDir = glm::normalize(glm::vec3(-0.8, -0.7, -0.9));
+	float lightIntensity = glm::dot(closestTriangle->Normal, -lightDir);
+	return glm::vec4(closestTriangle->Albedo * lightIntensity, 1.0f); // glm::abs(lightIntensity)
+}
+
 
 Renderer::HitPayload Renderer::ClosestHit(const Ray& ray, float hitDistance, int objectIndex)
 {

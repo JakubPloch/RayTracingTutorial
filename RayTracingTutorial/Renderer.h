@@ -37,6 +37,7 @@ private:
 	glm::vec4 PerPixel(uint32_t x, uint32_t y); //RayGen
 
 	HitPayload TraceRay(const Ray& ray);
+	glm::vec4 TraceRayModel(const Scene& scene, const Ray& ray);
 	HitPayload ClosestHit(const Ray& ray, float hitDistance, int objectIndex);
 	HitPayload Miss(const Ray& ray);
 
