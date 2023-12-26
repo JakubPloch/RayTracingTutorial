@@ -33,6 +33,15 @@ public:
 		orangeMaterial.Roughness = 0.1f;
 		orangeMaterial.EmissionColor = orangeMaterial.Albedo;
 		orangeMaterial.EmissionPower = 2.0f;
+
+		{
+			Model* model = new Model();
+			model->LoadFromOBJ("models/cube.obj");
+			model->Position = glm::vec3{ 2.0f, 0.0f, 0.0f };
+			model->m_materialIndex = 2;
+			m_Scene.Models.push_back(model);
+		}
+
 	}
 	virtual void OnUpdate(float ts) override
 	{
