@@ -35,10 +35,12 @@ private:
 
 	glm::vec4 PerPixelEvenlyLit(uint32_t x, uint32_t y, DirectionalLight directionalLight); //RayGen for scene editing
 	glm::vec4 PerPixel(uint32_t x, uint32_t y); //RayGen
+	glm::vec4 Renderer::PerPixelModel(uint32_t x, uint32_t y);
 
 	HitPayload TraceRay(const Ray& ray);
-	glm::vec4 TraceRayModel(const Scene& scene, const Ray& ray);
+	Renderer::HitPayload TraceRayModel(const Scene& scene, const Ray& ray);
 	HitPayload ClosestHit(const Ray& ray, float hitDistance, int objectIndex);
+	HitPayload ClosestHitModel(const Ray& ray, float hitDistance, int objectIndex);
 	HitPayload Miss(const Ray& ray);
 
 	std::shared_ptr<Walnut::Image> m_FinalImage;
