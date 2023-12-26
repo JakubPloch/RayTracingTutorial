@@ -22,6 +22,7 @@ public:
 
 	int LoadFromOBJ(const char* filename);
 
+	int m_materialIndex = 0;
 	int m_triangleCount = 0;
 	std::vector<glm::vec3*> m_verticies;
 	std::vector<glm::vec3*> m_normals;
