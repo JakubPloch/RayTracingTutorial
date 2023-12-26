@@ -126,14 +126,14 @@ glm::vec4 Renderer::PerPixel(uint32_t x, uint32_t y)
 	{
 		seed += i;
 
-		Renderer::HitPayload payload = TraceRay();
+		Renderer::HitPayload payload = TraceRay(m_ActiveScene, ray);
 		if (payload.HitDistance < 0.0f)
 		{
 			break;
 		}
 
-		const Sphere& sphere = m_ActiveScene->Spheres[payload.objectIndex];
-		const Material& material = m_ActiveScene->Materials[sphere.MaterialIndex];
+		const Model* model = payload.Model;
+		const Material& material = m_ActiveScene->Materials[model->m_materialIndex];
 
 		lightContribution *= material.Albedo;
 		light += material.GetEmission();
@@ -146,16 +146,17 @@ glm::vec4 Renderer::PerPixel(uint32_t x, uint32_t y)
 	return glm::vec4(light, 1.0f);
 }
 
-Renderer::HitPayload Renderer::TraceRay(const Scene& scene, const Ray& ray) {
+Renderer::HitPayload Renderer::TraceRay(const Scene* scene, const Ray& ray) {
 
-	if (scene.Models.size() == 0)
+	if (scene->Models.size() == 0)
 		return Miss(ray);
 
 	const Triangle* closestTriangle = nullptr;
+	const Model* closestModel = nullptr;
 	float hitDistance = std::numeric_limits<float>::max();
 
 
-	for (const Model* model : scene.Models) {
+	for (const Model* model : scene->Models) {
 		for (const Triangle* triangle : model->m_triangles)
 		{
 			glm::vec3 origin = ray.Origin - model->Position;
@@ -171,6 +172,7 @@ Renderer::HitPayload Renderer::TraceRay(const Scene& scene, const Ray& ray) {
 				)
 			{
 				hitDistance = t;
+				closestModel = model;
 				closestTriangle = triangle;
 			}
 		}
@@ -182,22 +184,21 @@ Renderer::HitPayload Renderer::TraceRay(const Scene& scene, const Ray& ray) {
 	glm::vec3 lightDir = glm::normalize(glm::vec3(-0.8, -0.7, -0.9));
 	float lightIntensity = glm::dot(closestTriangle->Normal, -lightDir);
 
-	return ClosestHitModel();
+	return ClosestHit(ray, hitDistance, closestModel, closestTriangle);
 }
 
-Renderer::HitPayload Renderer::ClosestHit(const Ray& ray, float hitDistance, Model* model, Triangle* triangle)
+Renderer::HitPayload Renderer::ClosestHit(const Ray& ray, float hitDistance, const Model* model, const Triangle* triangle)
 {
 	Renderer::HitPayload payload;
 	payload.HitDistance = hitDistance;
 	payload.Model = model;
+	payload.Triangle = triangle;
 
-	const Model* closestModel = m_ActiveScene->Models[objectIndex];
-
-	glm::vec3 tempRayOrigin = ray.Origin - closestModel->Position;
+	glm::vec3 tempRayOrigin = ray.Origin - triangle->Position;
 	payload.WorldPosition = tempRayOrigin + ray.Direction * hitDistance;
 	payload.WorldNormal = glm::normalize(payload.WorldPosition);
 
-	payload.WorldPosition += closestModel->Position;
+	payload.WorldPosition += triangle->Position;
 
 	return payload;
 }

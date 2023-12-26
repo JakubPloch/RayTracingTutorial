@@ -30,14 +30,14 @@ private:
 		glm::vec3 WorldPosition;
 		glm::vec3 WorldNormal;
 
-		Model* Model;
-		Triangle* Triangle;
+		const Model* Model;
+		const Triangle* Triangle;
 	};
 
 	glm::vec4 Renderer::PerPixel(uint32_t x, uint32_t y);
 
-	Renderer::HitPayload TraceRay(const Scene& scene, const Ray& ray);
-	HitPayload ClosestHit(const Ray& ray, float hitDistance, int objectIndex);
+	Renderer::HitPayload TraceRay(const Scene* scene, const Ray& ray);
+	HitPayload ClosestHit(const Ray& ray, float hitDistance, const  Model* model, const Triangle* triangle);
 	HitPayload Miss(const Ray& ray);
 
 	std::shared_ptr<Walnut::Image> m_FinalImage;
