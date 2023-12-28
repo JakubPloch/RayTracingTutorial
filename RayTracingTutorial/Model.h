@@ -1,3 +1,4 @@
+// Credit: https://github.com/NickPhilomath/RayTracing
 #pragma once
 
 #include <iostream>
