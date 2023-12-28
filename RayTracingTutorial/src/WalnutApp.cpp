@@ -18,49 +18,30 @@ public:
 	ExampleLayer()
 		: m_Camera(45.0f, 0.1f, 100.f)
 	{
-		DirectionalLight& directionalLight = m_Scene.GlobalDirectionalLight;
-		directionalLight.LightSourceCoords = glm::vec3(-1.0f, -0.8f, -2.2f);
-		directionalLight.IsEnabled = false;
-
 		m_Scene.BackgroundColor = glm::vec3(0.6f, 0.7f, 0.9f);
 
-		Material& pinkSphere = m_Scene.Materials.emplace_back();
-		pinkSphere.Albedo = { 1.0f, 0.0f, 1.0f };
-		pinkSphere.Roughness = 0.3f;
+		Material& pinkMaterial = m_Scene.Materials.emplace_back();
+		pinkMaterial.Albedo = { 1.0f, 0.0f, 1.0f };
+		pinkMaterial.Roughness = 0.3f;
 
-		Material& blueSphere = m_Scene.Materials.emplace_back();
-		blueSphere.Albedo = { 0.2f, 0.3f, 1.0f };
-		blueSphere.Roughness = 0.9f;
+		Material& blueMaterial = m_Scene.Materials.emplace_back();
+		blueMaterial.Albedo = { 0.2f, 0.3f, 1.0f };
+		blueMaterial.Roughness = 0.9f;
 
-		Material& orangeSphere = m_Scene.Materials.emplace_back();
-		orangeSphere.Albedo = { 0.8f, 0.5f, 0.2f };
-		orangeSphere.Roughness = 0.1f;
-		orangeSphere.EmissionColor = orangeSphere.Albedo;
-		orangeSphere.EmissionPower = 2.0f;
-
-		{
-			Sphere sphere;
-			sphere.Position = { 0.0f, 0.0f, 0.0f };
-			sphere.Radius = 1.0f;
-			sphere.MaterialIndex = 0;
-			m_Scene.Spheres.push_back(sphere);
-		}
+		Material& orangeMaterial = m_Scene.Materials.emplace_back();
+		orangeMaterial.Albedo = { 0.8f, 0.5f, 0.2f };
+		orangeMaterial.Roughness = 0.1f;
+		orangeMaterial.EmissionColor = orangeMaterial.Albedo;
+		orangeMaterial.EmissionPower = 2.0f;
 
 		{
-			Sphere sphere;
-			sphere.Position = { 2.0f, 0.0f, 0.0f };
-			sphere.Radius = 1.0f;
-			sphere.MaterialIndex = 2;
-			m_Scene.Spheres.push_back(sphere);
+			Model* model = new Model();
+			model->LoadFromOBJ("models/cube.obj");
+			model->Position = glm::vec3{ 2.0f, 0.0f, 0.0f };
+			model->m_materialIndex = 2;
+			m_Scene.Models.push_back(model);
 		}
 
-		{
-			Sphere sphere;
-			sphere.Position = { 0.0f, -101.0f, 0.0f };
-			sphere.Radius = 100.0f;
-			sphere.MaterialIndex = 1;
-			m_Scene.Spheres.push_back(sphere);
-		}
 	}
 	virtual void OnUpdate(float ts) override
 	{
@@ -91,11 +72,6 @@ public:
 
 		ImGui::Separator();
 
-		ImGui::Text("Global light source:");
-		DirectionalLight& directionalLight = m_Scene.GlobalDirectionalLight;
-		ImGui::Checkbox("Is light enabled", &directionalLight.IsEnabled);
-		ImGui::DragFloat3("Global Light Position", glm::value_ptr(directionalLight.LightSourceCoords), 0.1f, -5.0f, 5.0f);
-
 		ImGui::End();
 
 		ImGui::Begin("Scene");
@@ -103,19 +79,6 @@ public:
 		ImGui::Text("Background color:");
 		ImGui::ColorEdit3("Background color", glm::value_ptr(m_Scene.BackgroundColor));
 		ImGui::Separator();
-
-		for (size_t i = 0; i < m_Scene.Spheres.size(); i++)
-		{
-			ImGui::PushID(i);
-
-			Sphere& sphere = m_Scene.Spheres[i];
-			ImGui::DragFloat3("Position", glm::value_ptr(sphere.Position), 0.1f);
-			ImGui::DragInt("Material", &sphere.MaterialIndex, 1.0f, 0, (int)m_Scene.Materials.size() - 1);
-			ImGui::DragFloat("Radius", &sphere.Radius, 0.1f);
-
-			ImGui::Separator();
-			ImGui::PopID();
-		}
 
 		for (size_t i = 0; i < m_Scene.Materials.size(); i++)
 		{

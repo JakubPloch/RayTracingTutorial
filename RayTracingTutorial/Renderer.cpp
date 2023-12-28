@@ -86,17 +86,8 @@ void Renderer::Render(const Scene& scene, const Camera& camera)
 			std::for_each(std::execution::par, m_ImageHorizontalIter.begin(), m_ImageHorizontalIter.end(),
 			[this, y, scene](uint32_t x)
 				{
-					// TODO: implement a more generic PerPixel "shader" approach
-
 					glm::vec4 color;
-					if (scene.GlobalDirectionalLight.IsEnabled)
-					{
-						color = PerPixelEvenlyLit(x, y, scene.GlobalDirectionalLight);
-					}
-					else
-					{
-						color = PerPixel(x, y);
-					}
+					color = PerPixel(x, y);
 
 					m_AccumulationData[x + y * m_FinalImage->GetWidth()] += color;
 
@@ -116,50 +107,6 @@ void Renderer::Render(const Scene& scene, const Camera& camera)
 		m_FrameIndex = 1;
 }
 
-glm::vec4 Renderer::PerPixelEvenlyLit(uint32_t x, uint32_t y, DirectionalLight directionalLight)
-{
-	Ray ray;
-	ray.Origin = m_ActiveCamera->GetPosition();
-	ray.Direction = m_ActiveCamera->GetRayDirections()[x + y * m_FinalImage->GetWidth()];
-
-	glm::vec3 light = glm::vec3(0.0f);
-	glm::vec3 lightContribution(1.0f);
-
-	uint32_t seed = x + y * m_FinalImage->GetWidth();
-	seed *= m_FrameIndex;
-
-	int bounces = 5;
-	for (int i = 0; i < bounces; i++)
-	{
-		seed += i;
-
-		Renderer::HitPayload payload = TraceRay(ray);
-		if (payload.HitDistance < 0.0f)
-		{
-			break;
-		}
-
-		const Sphere& sphere = m_ActiveScene->Spheres[payload.objectIndex];
-		const Material& material = m_ActiveScene->Materials[sphere.MaterialIndex];
-		glm::vec3 sphereColor = material.Albedo;
-
-		// Not physically accurate - evenly lights each object
-		light += m_ActiveScene->BackgroundColor * lightContribution;
-		glm::vec3 lightDirection = glm::normalize(directionalLight.LightSourceCoords);
-		float lightIntensity = glm::max(glm::dot(payload.WorldNormal, -lightDirection), 0.0f);
-		sphereColor *= lightIntensity; // normal * 0.5f + 0.5f;
-
-		lightContribution *= material.Albedo;
-		light += material.GetEmission();
-
-		ray.Origin = payload.WorldPosition + payload.WorldNormal * 0.0001f;
-		ray.Direction = glm::normalize(payload.WorldNormal + material.Roughness * Helpers::InUnitSphere(seed));
-
-	}
-
-	return glm::vec4(light, 1.0f);
-}
-
 glm::vec4 Renderer::PerPixel(uint32_t x, uint32_t y)
 {
 	Ray ray;
@@ -177,15 +124,14 @@ glm::vec4 Renderer::PerPixel(uint32_t x, uint32_t y)
 	{
 		seed += i;
 
-		Renderer::HitPayload payload = TraceRay(ray);
+		Renderer::HitPayload payload = TraceRay(m_ActiveScene, ray);
 		if (payload.HitDistance < 0.0f)
 		{
 			break;
 		}
 
-		const Sphere& sphere = m_ActiveScene->Spheres[payload.objectIndex];
-		const Material& material = m_ActiveScene->Materials[sphere.MaterialIndex];
-		glm::vec3 sphereColor = material.Albedo;
+		const Model* model = payload.Model;
+		const Material& material = m_ActiveScene->Materials[model->m_materialIndex];
 
 		lightContribution *= material.Albedo;
 		light += material.GetEmission();
@@ -198,60 +144,59 @@ glm::vec4 Renderer::PerPixel(uint32_t x, uint32_t y)
 	return glm::vec4(light, 1.0f);
 }
 
-Renderer::HitPayload Renderer::TraceRay(const Ray& ray)
-{
-	// a = ray origin
-	// b = ray direction
-	// r = radius
-	// t = hit distance
+Renderer::HitPayload Renderer::TraceRay(const Scene* scene, const Ray& ray) {
 
-	int closestSphere = -1;
-	float hitDistance = FLT_MAX;
+	if (scene->Models.size() == 0)
+		return Miss(ray);
 
-	for (size_t i = 0; i < m_ActiveScene->Spheres.size(); i++)
-	{
-		const Sphere& sphere = m_ActiveScene->Spheres[i];
-		glm::vec3 tempRayOrigin = ray.Origin - sphere.Position;
+	const Triangle* closestTriangle = nullptr;
+	const Model* closestModel = nullptr;
+	float hitDistance = std::numeric_limits<float>::max();
 
-		float a = glm::dot(ray.Direction, ray.Direction);
-		float b = 2.0f * glm::dot(tempRayOrigin, ray.Direction);
-		float c = glm::dot(tempRayOrigin, tempRayOrigin) - sphere.Radius * sphere.Radius;
 
-		float discriminant = b * b - 4.0f * a * c;
-
-		if (discriminant <= 0.0f)
-			continue;
-
-		float closerHitDistance = (-b - glm::sqrt(discriminant)) / (2.0f * a);
-
-		if (closerHitDistance > 0 && closerHitDistance < hitDistance)
+	for (const Model* model : scene->Models) {
+		for (const Triangle* triangle : model->m_triangles)
 		{
-			hitDistance = closerHitDistance;
-			closestSphere = (int)i;
+			glm::vec3 origin = ray.Origin - model->Position;
+			float t = (glm::dot(triangle->Normal, triangle->A - origin)) / glm::dot(triangle->Normal, ray.Direction);
+			glm::vec3 Q = origin + t * ray.Direction;
+
+			if (
+				t > 0.0f &&
+				t < hitDistance &&
+				glm::dot(glm::cross(triangle->B - triangle->A, Q - triangle->A), triangle->Normal) >= 0 &&
+				glm::dot(glm::cross(triangle->C - triangle->B, Q - triangle->B), triangle->Normal) >= 0 &&
+				glm::dot(glm::cross(triangle->A - triangle->C, Q - triangle->C), triangle->Normal) >= 0
+				)
+			{
+				hitDistance = t;
+				closestModel = model;
+				closestTriangle = triangle;
+			}
 		}
 	}
 
-	if (closestSphere < 0)
+	if (closestTriangle == nullptr)
 		return Miss(ray);
 
-	return ClosestHit(ray, hitDistance, closestSphere);
+	glm::vec3 lightDir = glm::normalize(glm::vec3(-0.8, -0.7, -0.9));
+	float lightIntensity = glm::dot(closestTriangle->Normal, -lightDir);
 
+	return ClosestHit(ray, hitDistance, closestModel, closestTriangle);
 }
 
-
-Renderer::HitPayload Renderer::ClosestHit(const Ray& ray, float hitDistance, int objectIndex)
+Renderer::HitPayload Renderer::ClosestHit(const Ray& ray, float hitDistance, const Model* model, const Triangle* triangle)
 {
 	Renderer::HitPayload payload;
 	payload.HitDistance = hitDistance;
-	payload.objectIndex = objectIndex;
+	payload.Model = model;
+	payload.Triangle = triangle;
 
-	const Sphere& closestSphere = m_ActiveScene->Spheres[objectIndex];
-
-	glm::vec3 tempRayOrigin = ray.Origin - closestSphere.Position;
+	glm::vec3 tempRayOrigin = ray.Origin - model->Position;
 	payload.WorldPosition = tempRayOrigin + ray.Direction * hitDistance;
 	payload.WorldNormal = glm::normalize(payload.WorldPosition);
 
-	payload.WorldPosition += closestSphere.Position;
+	payload.WorldPosition += model->Position;
 
 	return payload;
 }
