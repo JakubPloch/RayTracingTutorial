@@ -5,7 +5,7 @@ Project based on The Cherno's Ray Tracing tutorial: https://youtu.be/gfW1Fhd9u9Q
 App template: https://github.com/StudioCherno/WalnutAppTemplate
 
 3D models import note:
-- models must be triangulated (polygons must be triangles, otherwise objects wil be glitched)
+- models must be triangulated (polygons must be triangles, otherwise objects are going to appear glitched)
 - model's file must be in .obj format
 - WalnutApp.cpp contains an example how to add a cube.obj object to the scene (path may be absolute)
 
