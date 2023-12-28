@@ -192,11 +192,11 @@ Renderer::HitPayload Renderer::ClosestHit(const Ray& ray, float hitDistance, con
 	payload.Model = model;
 	payload.Triangle = triangle;
 
-	glm::vec3 tempRayOrigin = ray.Origin - triangle->Position;
+	glm::vec3 tempRayOrigin = ray.Origin - model->Position;
 	payload.WorldPosition = tempRayOrigin + ray.Direction * hitDistance;
 	payload.WorldNormal = glm::normalize(payload.WorldPosition);
 
-	payload.WorldPosition += triangle->Position;
+	payload.WorldPosition += model->Position;
 
 	return payload;
 }

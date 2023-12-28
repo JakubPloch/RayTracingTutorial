@@ -20,7 +20,7 @@ public:
 	Model();
 	~Model();
 
-	int LoadFromOBJ(const char* filename);
+	void LoadFromOBJ(const char* filename);
 
 	int m_materialIndex = 0;
 	int m_triangleCount = 0;

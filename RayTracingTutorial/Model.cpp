@@ -37,7 +37,7 @@ void Model::CleanTrash() {
 		delete f;
 }
 
-int Model::LoadFromOBJ(const char* filename) {
+void Model::LoadFromOBJ(const char* filename) {
 	std::string line, prefix;
 	std::stringstream ss;
 	std::ifstream ifile(filename);
