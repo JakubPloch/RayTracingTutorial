@@ -86,8 +86,6 @@ void Renderer::Render(const Scene& scene, const Camera& camera)
 			std::for_each(std::execution::par, m_ImageHorizontalIter.begin(), m_ImageHorizontalIter.end(),
 			[this, y, scene](uint32_t x)
 				{
-					// TODO: implement a more generic PerPixel "shader" approach
-
 					glm::vec4 color;
 					color = PerPixel(x, y);
 

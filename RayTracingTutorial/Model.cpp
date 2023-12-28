@@ -86,7 +86,6 @@ int Model::LoadFromOBJ(const char* filename) {
 					}
 				}
 				m_faces.push_back(face);
-				//m_triangles.push_back(triangle);
 				m_triangleCount++;
 			}
 		}
